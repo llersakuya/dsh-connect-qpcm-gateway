@@ -8,13 +8,14 @@ DSH 的模型来源，并给出一块可以在 Web UI 里操作的面板。
 一条命令，不需要 `git`、不需要放行构建脚本、不需要装任何工具：
 
 ```bash
-dsh plugin --profile desktop add https://github.com/llersakuya/dsh-connect-qpcm-gateway/releases/download/v0.1.0/dsh-connect-qpcm-gateway-0.1.0.tgz
+dsh plugin --profile desktop add https://github.com/llersakuya/dsh-connect-qpcm-gateway/releases/download/v0.2.0/dsh-connect-qpcm-gateway-0.2.0.tgz
 ```
 
 **桌面版用户**也可以在 **设置 → 插件 → 安装 bundle** 里直接粘贴同一个 `.tgz` 地址。
 
-装完打开 **插件 → QPCM 网关接入**，粘一次你的 API Key，点「拉取模型」，
-勾选要用的模型，打开「接入」开关。模型立刻出现在模型选择器里，不用重启。
+装完打开 **插件 → QPCM 网关接入**，粘一次你的 API Key，点「保存并验证」。
+目录拉通之后插件会**自动接入**，模型立刻出现在模型选择器里，不用重启，也不用
+再去拨那个开关。
 
 ### 为什么用 `.tgz` 而不是 `github:` 地址
 
