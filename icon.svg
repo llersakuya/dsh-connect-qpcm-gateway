@@ -1,0 +1,44 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- QPCM 网关：一枚中继节点——外环表示「接入」，中心节点表示「路由」，三条支线表示「多模型」 -->
+  <defs>
+    <linearGradient id="qpcm-bg" x1="8" y1="4" x2="58" y2="62" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2F6FED" />
+      <stop offset="1" stop-color="#123A8C" />
+    </linearGradient>
+    <linearGradient id="qpcm-arc" x1="14" y1="12" x2="50" y2="52" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BBD6FF" />
+      <stop offset="1" stop-color="#7FAEF8" />
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="15" fill="url(#qpcm-bg)" />
+
+  <!-- 外环：留出右上缺口，暗示数据从外部接入 -->
+  <path
+    d="M46.5 20.2A16.5 16.5 0 1 0 48 40.5"
+    stroke="url(#qpcm-arc)"
+    stroke-width="4"
+    stroke-linecap="round"
+    opacity="0.95"
+  />
+
+  <!-- 中心路由节点 -->
+  <circle cx="32" cy="32" r="7.2" fill="#FFFFFF" />
+  <circle cx="32" cy="32" r="3.1" fill="#2F6FED" />
+
+  <!-- 三条支线：向不同后端分发 -->
+  <g stroke="#C9DDFF" stroke-width="2.6" stroke-linecap="round" opacity="0.9">
+    <path d="M32 39.2V47.5" />
+    <path d="M26.4 35.6L19 43" />
+    <path d="M37.6 35.6L45 43" />
+  </g>
+  <g fill="#FFFFFF">
+    <circle cx="32" cy="49.6" r="2.6" />
+    <circle cx="17" cy="45.1" r="2.6" />
+    <circle cx="47" cy="45.1" r="2.6" />
+  </g>
+
+  <!-- 右上入口的信号点 -->
+  <circle cx="52.4" cy="14.8" r="3.1" fill="#8FD6B4" />
+  <path d="M49.6 14.8h5.6" stroke="#0F3D2C" stroke-width="0" />
+</svg>

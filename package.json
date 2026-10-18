@@ -1,0 +1,80 @@
+{
+  "name": "dsh-connect-qpcm-gateway",
+  "displayName": "DSH Connect QPCM Gateway",
+  "icon": "./icon.svg",
+  "version": "0.1.0",
+  "description": "QPCM gateway (ai.qpcmqam.cn) connect bundle for the Harness Web UI: a settings page to enter the Base URL and API key, fetch the model list, toggle which models are offered, and optionally register the gateway as a DSH OpenAI-compatible LLM provider.",
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "qpcm",
+    "gateway",
+    "openai-compatible",
+    "llm-provider"
+  ],
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "client.js",
+    "icon.svg",
+    "locale/*.json",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-renderer"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.2 <5.0.0",
+    "@deepseek-ai/dsh-client-locale": ">=0.1.5 <0.3",
+    "@deepseek-ai/dsh-client-ui-renderer": ">=0.1.5 <0.3",
+    "@deepseek-ai/dsh-credentials": ">=0.1.5 <0.3",
+    "@deepseek-ai/dsh-host-webserver": ">=0.1.5 <0.3",
+    "@deepseek-ai/dsh-llm": ">=0.1.5 <0.3",
+    "@deepseek-ai/dsh-llm-pi-ai": ">=0.1.5 <0.3",
+    "@deepseek-ai/schemastery": "^3.18.2",
+    "@earendil-works/pi-ai": "^1.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": { "optional": true },
+    "@deepseek-ai/dsh-client-locale": { "optional": true },
+    "@deepseek-ai/dsh-client-ui-renderer": { "optional": true },
+    "@deepseek-ai/dsh-credentials": { "optional": true },
+    "@deepseek-ai/dsh-host-webserver": { "optional": true },
+    "@deepseek-ai/dsh-llm": { "optional": true },
+    "@deepseek-ai/dsh-llm-pi-ai": { "optional": true },
+    "@deepseek-ai/schemastery": { "optional": true },
+    "@earendil-works/pi-ai": { "optional": true }
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "homepage": "https://github.com/llersakuya/dsh-connect-qpcm-gateway#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/llersakuya/dsh-connect-qpcm-gateway.git"
+  },
+  "bugs": {
+    "url": "https://github.com/llersakuya/dsh-connect-qpcm-gateway/issues"
+  },
+  "license": "MIT"
+}

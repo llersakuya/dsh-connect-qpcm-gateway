@@ -1,0 +1,31 @@
+# dsh-connect-qpcm-gateway — the bundle's own patch layer.
+#
+# 把 https://ai.qpcmqam.cn/v1 接成 DSH 的 OpenAI 兼容 LLM provider。
+# 这里的 `config` 只是**出厂默认值**：装好之后，Base URL / 显示名 / 启用哪些
+# 模型 / 是否接入 都由插件面板写入
+#   ~/.dsh/state/<profile>/dsh-connect-qpcm-gateway/state.json
+# 面板保存即生效，不会回写这个文件，也不会重载本插件。
+#
+# API Key 不在这里配置：插件读 DSH 凭据服务里的 `QPCM_API_KEY` 引用，
+# 在面板里填一次即可（写入 ~/.dsh/.credentials.yaml 的 refs 下）。
+- insert:
+    - id: dsh-connect-qpcm-gateway
+      name: dsh-connect-qpcm-gateway
+      config:
+        # OpenAI 兼容源站（模型目录 + 推理）。换端点时在面板里改即可。
+        baseURL: https://ai.qpcmqam.cn/v1
+        # 模型选择器里这条 provider 的显示名。
+        displayName: QPCM Gateway
+        # 本插件读取的凭据引用名（owner-only 凭据文件里的一行）。
+        apiKeyEnv: QPCM_API_KEY
+        # 是否把网关注册成 DSH 的 LLM provider。默认关（opt-in）：
+        # 填好 Base URL 与 API Key、拉到模型清单之后再打开。
+        enabled: false
+        # 启用清单。空 = 不过滤（目录里每个 chat 模型都提供）。
+        enabledIds: []
+        # 单次上游请求超时（毫秒）。
+        requestTimeoutMs: 30000
+        # 目录缓存秒数。
+        cacheSeconds: 60
+        # 追加可信 Host 名（默认 localhost / 127.0.0.1 / ::1，只增不替）。
+        # allowedHosts: []
