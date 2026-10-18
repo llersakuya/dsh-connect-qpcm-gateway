@@ -19,7 +19,7 @@ window.__ModuleLoader__.load({
     /** 与 Host 的 `NS` 一致：路由前缀与 slot key 都用它。 */
     const NS = 'dsh-connect-qpcm-gateway'
     const SNAPSHOT_PATH = `/api/${NS}/snapshot`
-    const CONFIG_PATH = `/api/${NS}/config`
+    const CONNECTIONS_PATH = `/api/${NS}/connections`
     const KEY_PATH = `/api/${NS}/key`
     const REFRESH_PATH = `/api/${NS}/refresh`
     const LIMITS_PATH = `/api/${NS}/limits`
@@ -70,6 +70,25 @@ window.__ModuleLoader__.load({
       'models.selection.none': '一个都不提供',
       'models.updated': '更新于 {time}',
 
+      'conn.title': 'API 组',
+      'conn.hint': '每一组有独立端点、独立 Key、独立模型清单。它们会同时出现在模型选择器里。',
+      'conn.add': '添加一组',
+      'conn.adding': '添加中…',
+      'conn.remove': '删除这一组',
+      'conn.removing': '删除中…',
+      'conn.added': '已添加，填好地址和 Key 就能用。',
+      'conn.removed': '已删除。',
+      'conn.created': '新建 {count} 个',
+      'conn.max': '最多 {max} 组。',
+      'conn.name': '名称',
+      'conn.namePlaceholder': '例如 主力 / 备用',
+      'conn.count': '{count} 组',
+      'conn.current': '当前配置的是：{name}',
+      'conn.empty': '还没有任何一组。点「添加一组」开始。',
+      'conn.rename': '改名',
+      'conn.confirmRemove': '删除这一组？它的 Key 引用会留着，但不再被使用。',
+      'conn.alias': '路由 id',
+      'conn.aliasHint': '模型选择器里的分组名，也是 <provider>/<model> 里的前半段。',
       'limits.custom': '已自定义',
       'limits.context': '上下文',
       'limits.maxTokens': '最大输出',
@@ -84,6 +103,7 @@ window.__ModuleLoader__.load({
       'limits.badMaxTokens': '最大输出必须是正整数，或者留空表示自动。',
 
       'provider.title': '接入',
+      'provider.needsKey': '这一组还没有可用的 Key，打开开关也不会出现模型。',
       'provider.hint': '打开后，这些模型会出现在模型选择器里。',
       'provider.on': '已接入',
       'provider.off': '未接入',
@@ -144,6 +164,26 @@ window.__ModuleLoader__.load({
       'models.selection.none': 'Offering nothing',
       'models.updated': 'Updated {time}',
 
+      'conn.title': 'API groups',
+      'conn.hint': 'Each group has its own endpoint, key, and model list. All of them appear in the model picker at the same time.',
+      'conn.add': 'Add a group',
+      'conn.adding': 'Adding…',
+      'conn.remove': 'Delete this group',
+      'conn.removing': 'Deleting…',
+      'conn.added': 'Added. Fill in the endpoint and key to use it.',
+      'conn.removed': 'Deleted.',
+      'conn.created': '{count} available',
+      'conn.max': 'At most {max} groups.',
+      'conn.name': 'Name',
+      'conn.namePlaceholder': 'e.g. primary / backup',
+      'conn.count': '{count} groups',
+      'conn.current': 'Editing: {name}',
+      'conn.empty': 'No groups yet. Click "Add a group" to start.',
+      'conn.rename': 'Rename',
+      'conn.confirmRemove': 'Delete this group? Its key reference stays on disk but is no longer used.',
+      'conn.alias': 'route id',
+      'conn.aliasHint': 'The group name in the model picker, and the first half of <provider>/<model>.',
+
       'limits.custom': 'customized',
       'limits.context': 'context',
       'limits.maxTokens': 'max output',
@@ -158,6 +198,7 @@ window.__ModuleLoader__.load({
       'limits.badMaxTokens': 'The max output must be a positive integer, or empty for automatic.',
 
       'provider.title': 'Integration',
+      'provider.needsKey': 'This group has no usable key, so turning it on will not surface any model.',
       'provider.hint': 'Once on, these models appear in the model selector.',
       'provider.on': 'Connected',
       'provider.off': 'Not connected',
@@ -419,6 +460,66 @@ window.__ModuleLoader__.load({
         background: '#fff',
         transition: 'left 140ms ease',
       },
+
+      // ---- 连接分组 ----
+      tabs: { display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+      tab: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        height: 30,
+        padding: '0 12px',
+        borderRadius: 8,
+        border: '1px solid var(--dsw-alias-border-l1)',
+        background: 'var(--dsw-alias-bg-layer-2)',
+        color: 'var(--dsw-alias-label-primary)',
+        fontSize: 13,
+        fontFamily: 'inherit',
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      },
+      tabOn: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        height: 30,
+        padding: '0 12px',
+        borderRadius: 8,
+        border: '1px solid var(--dsw-alias-brand-primary)',
+        background: 'var(--dsw-alias-brand-primary)',
+        color: '#fff',
+        fontSize: 13,
+        fontFamily: 'inherit',
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      },
+      tabDot: {
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        background: 'var(--dsw-alias-label-secondary)',
+        opacity: 0.5,
+      },
+      tabDotOn: {
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        background: 'var(--dsw-alias-state-success-primary)',
+      },
+    }
+
+    /** 连线状态点：开启时用实心绿点，关闭时用暗点。 */
+    function tabDot(on) {
+      return on === true ? S.tabDotOn : S.tabDot
+    }
+
+    /**
+     * 条件样式：`J(条件, 追加样式, 基础样式)`。
+     *
+     * 面板里「禁用 + 高亮色」这类组合出现太多次，写成一个函数比到处展开三元短。
+     */
+    function J(when, extra, base) {
+      return when ? { ...base, ...extra } : base
     }
 
     /** 时间戳 → 本地短时间；0 表示「还没有」。 */
@@ -445,12 +546,14 @@ window.__ModuleLoader__.load({
 
       const [snapshot, setSnapshot] = useState(null)
       const [loadError, setLoadError] = useState(null)
+      /** 当前正在编辑的连接 id；null = 用快照里的第一条。 */
+      const [activeId, setActiveId] = useState(null)
       const [urlDraft, setUrlDraft] = useState('')
+      const [nameDraft, setNameDraft] = useState('')
       const [keyDraft, setKeyDraft] = useState('')
       const [busy, setBusy] = useState(null)
       const [note, setNote] = useState(null)
-      // 逐模型限制的编辑草稿：`{ modelId: {contextWindow, maxTokens, image} }`。
-      // 只有被编辑过的模型才在这里，其余直接显示 snapshot 里的生效值。
+      // 逐模型限制的编辑草稿：`{ "<连接id>/<模型id>": {contextWindow, maxTokens, image} }`。
       const [limitDrafts, setLimitDrafts] = useState({})
       const [, setLocaleRevision] = useState(0)
 
@@ -499,13 +602,21 @@ window.__ModuleLoader__.load({
         return () => clearInterval(timer)
       }, [pollSeconds, load])
 
-      // 端点草稿只在第一次拿到快照时同步一次：之后用户正在输入，别抢他的光标。
-      const seeded = useRef(false)
+      /** 当前编辑的连接：优先 activeId，失效时回落到第一条。 */
+      const connections = Array.isArray(snapshot?.connections) ? snapshot.connections : []
+      const active = connections.find((connection) => connection.id === activeId) ?? connections[0] ?? null
+
+      // 端点/名称草稿只在切换连接时同步：之后用户正在输入，别抢他的光标。
+      const seededFor = useRef(null)
       useEffect(() => {
-        if (seeded.current || snapshot === null) return
-        seeded.current = true
-        setUrlDraft(snapshot.config.baseURL)
-      }, [snapshot])
+        if (active === null) return
+        if (seededFor.current === active.id) return
+        seededFor.current = active.id
+        setUrlDraft(active.baseURL)
+        setNameDraft(active.displayName)
+        setKeyDraft('')
+        setLimitDrafts({})
+      }, [active])
 
       /** 统一的写操作外壳：置 busy、收错误、刷新快照。 */
       const write = useCallback(
@@ -532,44 +643,59 @@ window.__ModuleLoader__.load({
         [load, tt],
       )
 
+      /** 草稿的键：跨连接不能撞，所以带上连接 id。 */
+      const draftKey = (modelId) => `${active === null ? '' : active.id}/${modelId}`
+
       /** 某个模型当前要显示的三个值：草稿优先，否则用 snapshot 里的生效值。 */
       const limitsOf = useCallback(
         (model) => {
-          const draft = limitDrafts[model.id]
+          const draft = limitDrafts[draftKey(model.id)]
           if (draft !== undefined) return draft
           const limits = model.limits ?? {}
+          const input = Array.isArray(limits.input) ? limits.input : ['text']
           return {
             contextWindow: limits.contextWindow ?? 128000,
             maxTokens: limits.maxTokens ?? '',
-            input: Array.isArray(limits.input) ? limits.input : ['text'],
-            image: (Array.isArray(limits.input) ? limits.input : ['text']).includes('image'),
+            input,
+            image: input.includes('image'),
             touched: false,
           }
         },
-        [limitDrafts],
+        [limitDrafts, active],
       )
 
       /** 改草稿（不落盘——面板上还有「保存」这一步，避免每敲一个数字就重建适配器）。 */
-      const editLimit = useCallback((id, patch) => {
-        setLimitDrafts((previous) => {
-          const base = previous[id] ?? {}
-          return { ...previous, [id]: { ...base, ...patch, touched: true } }
-        })
-        setNote(null)
-      }, [])
+      const editLimit = useCallback(
+        (modelId, patch) => {
+          const key = draftKey(modelId)
+          setLimitDrafts((previous) => {
+            const base = previous[key] ?? {}
+            return { ...previous, [key]: { ...base, ...patch, touched: true } }
+          })
+          setNote(null)
+        },
+        [active],
+      )
 
       /** 把某个模型的限制写回 Host。`reset` 为真时删掉覆盖、回到默认。 */
       const saveLimits = useCallback(
         async (model, reset) => {
+          if (active === null) return
+          const key = draftKey(model.id)
+          const clearDraft = () =>
+            setLimitDrafts((previous) => {
+              const next = { ...previous }
+              delete next[key]
+              return next
+            })
           if (reset === true) {
-            const body = await write('limits', LIMITS_PATH, { id: model.id, reset: true }, tt('limits.reset.done'))
-            if (body !== null && body.ok === true) {
-              setLimitDrafts((previous) => {
-                const next = { ...previous }
-                delete next[model.id]
-                return next
-              })
-            }
+            const body = await write(
+              'limits',
+              LIMITS_PATH,
+              { id: active.id, model: model.id, reset: true },
+              tt('limits.reset.done'),
+            )
+            if (body !== null && body.ok === true) clearDraft()
             return
           }
           const draft = limitsOf(model)
@@ -587,25 +713,25 @@ window.__ModuleLoader__.load({
           const body = await write(
             'limits',
             LIMITS_PATH,
-            { id: model.id, contextWindow: window, ...(max === null ? {} : { maxTokens: max }), input },
+            { id: active.id, model: model.id, contextWindow: window, ...(max === null ? {} : { maxTokens: max }), input },
             tt('limits.saved'),
           )
-          if (body !== null && body.ok === true) {
-            setLimitDrafts((previous) => {
-              const next = { ...previous }
-              delete next[model.id]
-              return next
-            })
-          }
+          if (body !== null && body.ok === true) clearDraft()
         },
-        [limitsOf, tt, write],
+        [active, limitsOf, tt, write],
       )
 
       // ---- 首屏 ----
       // 摘要视图不渲染 loading/错误块：owner 会把这一行放进折叠标题里，
       // 那里放一整块重试按钮不合适。
       if (snapshot === null) {
-        if (summaryOnly) return h('span', { style: S.status }, loadError === null ? tt('panel.loading') : format(tt('panel.error'), { error: loadError }))
+        if (summaryOnly) {
+          return h(
+            'span',
+            { style: S.status },
+            loadError === null ? tt('panel.loading') : format(tt('panel.error'), { error: loadError }),
+          )
+        }
         return h(
           'div',
           { style: S.page },
@@ -621,26 +747,51 @@ window.__ModuleLoader__.load({
         )
       }
 
-      const { config, credential, provider, catalog, defaults } = snapshot
-      const selection = catalog.selection
-      const chatModels = catalog.models.filter((model) => model.chat === true)
-      const hasCatalog = catalog.models.length > 0
+      const { provider, defaults, maxConnections } = snapshot
 
-      // `view: 'summary'`：折叠态那一行，只说「接没接、几个模型」。
+      // `view: 'summary'`：折叠态那一行，说「几组、接没接、一共几个模型」。
       if (summaryOnly) {
         const parts = []
-        parts.push(provider.registered ? tt('provider.on') : tt('provider.off'))
-        parts.push(credential.configured === true ? format(tt('key.configured'), { source: credential.source ?? 'file' }) : tt('key.missing'))
-        if (hasCatalog) parts.push(format(tt('models.offered'), { count: catalog.offeredCount }))
-        return h(
-          'span',
-          { style: catalog.error === null || catalog.error === undefined ? S.status : S.statusError },
-          parts.join(' · '),
-        )
+        parts.push(format(tt('conn.count'), { count: connections.length }))
+        const enabled = connections.filter((connection) => connection.enabled === true)
+        parts.push(enabled.length > 0 ? tt('provider.on') : tt('provider.off'))
+        const offered = connections.reduce((sum, connection) => sum + (connection.catalog?.offeredCount ?? 0), 0)
+        if (offered > 0) parts.push(format(tt('models.offered'), { count: offered }))
+        const failed = connections.some((connection) => connection.catalog?.errorCode !== null && connection.catalog?.errorCode !== undefined)
+        return h('span', { style: failed ? S.statusError : S.status }, parts.join(' · '))
       }
+
+      /** 新建一组。 */
+      const addConnection = async () => {
+        const body = await write('connection', CONNECTIONS_PATH, { action: 'create' }, tt('conn.added'))
+        if (body !== null && body.ok === true && body.connection !== undefined) setActiveId(body.connection.id)
+      }
+
+      /** 删除当前这一组。 */
+      const removeConnection = async () => {
+        if (active === null) return
+        const body = await write(
+          'connection',
+          CONNECTIONS_PATH,
+          { action: 'delete', id: active.id },
+          tt('conn.removed'),
+        )
+        if (body !== null && body.ok === true) setActiveId(null)
+      }
+
+      const canAdd = connections.length < (maxConnections ?? 8)
+      const off = active !== null && active.enabled !== true
+
+      // 当前连接的三态
+      const catalog = active === null ? null : active.catalog
+      const credential = active === null ? null : active.credential
+      const selection = catalog === null ? 'all' : catalog.selection
+      const chatModels = catalog === null ? [] : catalog.models.filter((model) => model.chat === true)
+      const hasCatalog = catalog !== null && catalog.models.length > 0
 
       /** 当前勾着的 id 清单——必须按三态还原，否则「全选」态下取消一个会变成只选它。 */
       const currentIds = () => {
+        if (catalog === null) return []
         if (selection === 'all') return chatModels.map((model) => model.id)
         if (selection === 'none') return []
         return catalog.models.filter((model) => model.selected === true).map((model) => model.id)
@@ -658,14 +809,19 @@ window.__ModuleLoader__.load({
         return ids
       }
 
-      const toggleModel = (id) => {
+      const toggleModel = (modelId) => {
+        if (active === null) return
         const current = currentIds()
-        const next = current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id]
-        void write('models', CONFIG_PATH, { enabledIds: withSelection(next) })
+        const next = current.includes(modelId) ? current.filter((entry) => entry !== modelId) : [...current, modelId]
+        void write('models', CONNECTIONS_PATH, { action: 'update', id: active.id, enabledIds: withSelection(next) })
       }
 
-      const selectAll = () => void write('models', CONFIG_PATH, { enabledIds: [] })
-      const selectNone = () => void write('models', CONFIG_PATH, { enabledIds: ['__hide_all__'] })
+      const selectAll = () =>
+        active === null ? undefined : void write('models', CONNECTIONS_PATH, { action: 'update', id: active.id, enabledIds: [] })
+      const selectNone = () =>
+        active === null
+          ? undefined
+          : void write('models', CONNECTIONS_PATH, { action: 'update', id: active.id, enabledIds: ['__hide_all__'] })
 
       const selectionLabel =
         selection === 'all'
@@ -675,12 +831,14 @@ window.__ModuleLoader__.load({
             : tt('models.selection.list')
 
       const credentialLabel =
-        credential.configured === true
-          ? format(tt('key.configured'), { source: credential.source ?? 'file' })
-          : tt('key.missing')
+        credential === null
+          ? ''
+          : credential.configured === true
+            ? format(tt('key.configured'), { source: credential.source ?? 'file' })
+            : tt('key.missing')
 
       const catalogProblem =
-        catalog.errorCode !== null && catalog.errorCode !== undefined
+        catalog !== null && catalog.errorCode !== null && catalog.errorCode !== undefined
           ? tt(`catalog.${catalog.errorCode}`) === `catalog.${catalog.errorCode}`
             ? catalog.error
             : tt(`catalog.${catalog.errorCode}`)
@@ -704,293 +862,411 @@ window.__ModuleLoader__.load({
           ),
         ),
 
-        // ---- 源站地址 ----
-        h(
-          'div',
-          { style: S.section },
-          h('div', { style: S.sectionHead }, h('h4', { style: S.sectionTitle }, tt('endpoint.title'))),
-          h('p', { style: S.hint }, tt('endpoint.hint')),
-          h(
-            'div',
-            { style: S.row },
-            h('input', {
-              style: S.input,
-              value: urlDraft,
-              placeholder: tt('endpoint.placeholder'),
-              spellCheck: false,
-              onChange: (event) => setUrlDraft(event.target.value),
-              onKeyDown: (event) => {
-                if (event.key === 'Enter') void write('url', CONFIG_PATH, { baseURL: urlDraft }, tt('common.saved'))
-              },
-            }),
-            h(
-              'button',
-              {
-                style: busy === null ? S.primary : { ...S.primary, ...S.buttonDisabled },
-                disabled: busy !== null || urlDraft.trim() === '' || urlDraft.trim() === config.baseURL,
-                onClick: () => void write('url', CONFIG_PATH, { baseURL: urlDraft }, tt('common.saved')),
-              },
-              tt('endpoint.save'),
-            ),
-            defaults.baseURL !== config.baseURL
-              ? h(
-                  'button',
-                  {
-                    style: S.button,
-                    disabled: busy !== null,
-                    onClick: () => {
-                      setUrlDraft(defaults.baseURL)
-                      void write('reset', CONFIG_PATH, { baseURL: defaults.baseURL }, tt('common.saved'))
-                    },
-                  },
-                  tt('endpoint.reset'),
-                )
-              : null,
-          ),
-        ),
-
-        // ---- API Key ----
+        // ---- 分组列表 ----
         h(
           'div',
           { style: S.section },
           h(
             'div',
             { style: S.sectionHead },
-            h('h4', { style: S.sectionTitle }, tt('key.title')),
-            h('span', { style: credential.configured === true ? S.badgeOn : S.badge }, credentialLabel),
-          ),
-          h('p', { style: S.hint }, format(tt('key.hint'), { ref: credential.ref })),
-          h(
-            'div',
-            { style: S.row },
-            h('input', {
-              style: S.input,
-              type: 'password',
-              value: keyDraft,
-              placeholder: tt('key.placeholder'),
-              spellCheck: false,
-              autoComplete: 'off',
-              onChange: (event) => setKeyDraft(event.target.value),
-              onKeyDown: (event) => {
-                if (event.key === 'Enter' && keyDraft.trim() !== '') {
-                  void write('key', KEY_PATH, { value: keyDraft }, tt('key.saved')).then(() => setKeyDraft(''))
-                }
-              },
-            }),
-            h(
-              'button',
-              {
-                style: busy === null ? S.primary : { ...S.primary, ...S.buttonDisabled },
-                disabled: busy !== null || keyDraft.trim() === '' || credential.writable === false,
-                onClick: () => {
-                  void write('key', KEY_PATH, { value: keyDraft }, tt('key.saved')).then(() => setKeyDraft(''))
-                },
-              },
-              busy === 'key' ? tt('key.saving') : tt('key.save'),
-            ),
-            credential.configured === true
-              ? h(
-                  'button',
-                  {
-                    style: busy === null ? S.button : { ...S.button, ...S.buttonDisabled },
-                    disabled: busy !== null || credential.writable === false,
-                    onClick: () => void write('key', KEY_PATH, { clear: true }, tt('key.cleared')),
-                  },
-                  tt('key.clear'),
-                )
-              : null,
-          ),
-          credential.writable === false ? h('p', { style: S.statusError }, tt('key.readonly')) : null,
-        ),
-
-        // ---- 模型目录 ----
-        h(
-          'div',
-          { style: S.section },
-          h(
-            'div',
-            { style: S.sectionHead },
-            h('h4', { style: S.sectionTitle }, tt('models.title')),
-            h('span', { style: S.badge }, format(tt('models.count'), { total: catalog.models.length, chat: chatModels.length })),
+            h('h4', { style: S.sectionTitle }, tt('conn.title')),
+            h('span', { style: S.badge }, format(tt('conn.count'), { count: connections.length })),
             h('span', { style: S.spacer }),
             h(
               'button',
-              { style: busy === null ? S.button : { ...S.button, ...S.buttonDisabled }, disabled: busy !== null, onClick: () => void write('refresh', REFRESH_PATH, {}) },
-              busy === 'refresh' ? tt('models.fetching') : tt('models.fetch'),
+              {
+                style: busy !== null || !canAdd ? { ...S.primary, ...S.buttonDisabled } : S.primary,
+                disabled: busy !== null || !canAdd,
+                onClick: () => void addConnection(),
+              },
+              busy === 'connection' ? tt('conn.adding') : tt('conn.add'),
             ),
           ),
-          catalogProblem !== null ? h('p', { style: S.statusError }, catalogProblem) : null,
-          catalog.fetchedAt > 0
-            ? h('p', { style: S.hint }, format(tt('models.updated'), { time: clockOf(catalog.fetchedAt) }))
-            : null,
+          h('p', { style: S.hint }, tt('conn.hint')),
+          !canAdd ? h('p', { style: S.hint }, format(tt('conn.max'), { max: maxConnections ?? 8 })) : null,
 
-          !hasCatalog
-            ? h('div', { style: S.empty }, tt('models.empty'))
+          connections.length === 0
+            ? h('div', { style: S.empty }, tt('conn.empty'))
             : h(
                 'div',
-                null,
-                h(
-                  'div',
-                  { style: S.row },
-                  h('span', { style: S.status }, format(tt('models.offered'), { count: catalog.offeredCount })),
-                  h('span', { style: S.status }, `· ${selectionLabel}`),
-                  h('span', { style: S.spacer }),
+                { style: S.tabs },
+                connections.map((connection) =>
                   h(
                     'button',
-                    { style: S.button, disabled: busy !== null || selection === 'all', onClick: selectAll },
-                    tt('models.selectAll'),
+                    {
+                      key: connection.id,
+                      style: connection.id === (active === null ? '' : active.id) ? S.tabOn : S.tab,
+                      title: `${connection.id} — ${connection.baseURL}`,
+                      onClick: () => setActiveId(connection.id),
+                    },
+                    h('span', { style: tabDot(connection.enabled === true) }),
+                    connection.displayName,
                   ),
-                  h(
-                    'button',
-                    { style: S.button, disabled: busy !== null || selection === 'none', onClick: selectNone },
-                    tt('models.selectNone'),
-                  ),
-                ),
-                h(
-                  'div',
-                  { style: S.list },
-                  catalog.models.map((model) => {
-                    const limits = limitsOf(model)
-                    const overridden = Array.isArray(model.overridden) ? model.overridden : []
-                    // 不能用 <label> 包整行：里面的数字输入框会把点击转给复选框。
-                    return h(
-                      'div',
-                      { key: model.id, style: S.itemWrap },
-                      h(
-                        'div',
-                        {
-                          style: model.chat === true ? S.item : { ...S.item, ...S.itemExcluded },
-                          title: model.chat === true ? model.id : `${model.id} — ${tt('models.nonChat')}`,
-                        },
-                        h('input', {
-                          type: 'checkbox',
-                          checked: model.selected === true,
-                          disabled: busy !== null || model.chat !== true,
-                          onChange: () => toggleModel(model.id),
-                        }),
-                        h('span', { style: S.itemName }, model.name),
-                        model.name !== model.id ? h('span', { style: S.itemId }, model.id) : null,
-                        h('span', { style: S.spacer }),
-                        overridden.length > 0 && model.chat === true
-                          ? h('span', { style: S.customBadge }, tt('limits.custom'))
-                          : null,
-                        model.chat === true ? null : h('span', { style: S.badge }, tt('models.nonChat')),
-                      ),
-                      model.chat === true
-                        ? h(
-                            'div',
-                            { style: S.limitsRow },
-                            h(
-                              'span',
-                              { style: S.limitsField },
-                              h('span', { style: S.limitsLabel }, tt('limits.context')),
-                              h('input', {
-                                style: S.limitsInput,
-                                type: 'number',
-                                min: 1,
-                                step: 1024,
-                                value: limits.contextWindow === '' ? '' : String(limits.contextWindow),
-                                disabled: busy !== null,
-                                'aria-label': `${model.id} ${tt('limits.context')}`,
-                                onChange: (event) => editLimit(model.id, { contextWindow: event.target.value }),
-                              }),
-                            ),
-                            h(
-                              'span',
-                              { style: S.limitsField },
-                              h('span', { style: S.limitsLabel }, tt('limits.maxTokens')),
-                              h('input', {
-                                style: S.limitsInput,
-                                type: 'number',
-                                min: 1,
-                                step: 256,
-                                value: limits.maxTokens === null || limits.maxTokens === undefined ? '' : String(limits.maxTokens),
-                                placeholder: tt('limits.maxTokens.auto'),
-                                disabled: busy !== null,
-                                'aria-label': `${model.id} ${tt('limits.maxTokens')}`,
-                                onChange: (event) => editLimit(model.id, { maxTokens: event.target.value }),
-                              }),
-                            ),
-                            h(
-                              'button',
-                              {
-                                style: limits.image === true ? S.limitsMiniOn : S.limitsMini,
-                                disabled: busy !== null,
-                                title: tt('limits.image.hint'),
-                                onClick: () => editLimit(model.id, { image: limits.image !== true }),
-                              },
-                              tt('limits.image'),
-                            ),
-                            h('span', { style: S.spacer }),
-                            h(
-                              'button',
-                              {
-                                style: limits.touched === true ? S.primary : S.limitsMini,
-                                disabled: busy !== null,
-                                onClick: () => void saveLimits(model, false),
-                              },
-                              tt('limits.save'),
-                            ),
-                            overridden.length > 0
-                              ? h(
-                                  'button',
-                                  { style: S.limitsMini, disabled: busy !== null, onClick: () => void saveLimits(model, true) },
-                                  tt('limits.reset'),
-                                )
-                              : null,
-                          )
-                        : null,
-                    )
-                  }),
                 ),
               ),
         ),
 
-        // ---- 接入开关 ----
-        h(
-          'div',
-          { style: S.section },
-          h(
-            'div',
-            { style: S.sectionHead },
-            h('h4', { style: S.sectionTitle }, tt('provider.title')),
-            h('span', { style: provider.registered ? S.badgeOn : S.badge }, provider.registered ? tt('provider.on') : tt('provider.off')),
-            h('span', { style: S.spacer }),
-            h(
-              'button',
-              {
-                style: config.enabled ? S.switchTrackOn : S.switchTrack,
-                role: 'switch',
-                'aria-checked': config.enabled === true,
-                'aria-label': tt('provider.title'),
-                disabled: busy !== null || provider.llmAvailable !== true,
-                onClick: () => void write('provider', CONFIG_PATH, { enabled: config.enabled !== true }),
-              },
-              h('span', { style: config.enabled ? S.switchKnobOn : S.switchKnob }),
+        active === null
+          ? null
+          : h(
+              'div',
+              null,
+
+              // ---- 这一组的端点与名称 ----
+              h(
+                'div',
+                { style: S.section },
+                h(
+                  'div',
+                  { style: S.sectionHead },
+                  h('h4', { style: S.sectionTitle }, tt('endpoint.title')),
+                  h('span', { style: S.badge }, format(tt('conn.current'), { name: active.displayName })),
+                  h('span', { style: S.spacer }),
+                  h(
+                    'button',
+                    {
+                      style: J(busy !== null, S.buttonDisabled, S.button),
+                      disabled: busy !== null,
+                      onClick: () => {
+                        // 删除是破坏性操作，用原生 confirm 挡住误点。
+                        if (typeof confirm === 'function' && !confirm(tt('conn.confirmRemove'))) return
+                        void removeConnection()
+                      },
+                    },
+                    busy === 'connection' ? tt('conn.removing') : tt('conn.remove'),
+                  ),
+                ),
+                h('p', { style: S.hint }, tt('endpoint.hint')),
+                h(
+                  'div',
+                  { style: S.row },
+                  h('input', {
+                    style: S.input,
+                    value: nameDraft,
+                    placeholder: tt('conn.namePlaceholder'),
+                    spellCheck: false,
+                    onChange: (event) => setNameDraft(event.target.value),
+                    onKeyDown: (event) => {
+                      if (event.key === 'Enter' && nameDraft.trim() !== '') {
+                        void write('conn', CONNECTIONS_PATH, { action: 'update', id: active.id, displayName: nameDraft }, tt('common.saved'))
+                      }
+                    },
+                  }),
+                  h(
+                    'button',
+                    {
+                      style: J(busy !== null || nameDraft.trim() === '' || nameDraft.trim() === active.displayName, S.buttonDisabled, S.button),
+                      disabled: busy !== null || nameDraft.trim() === '' || nameDraft.trim() === active.displayName,
+                      onClick: () =>
+                        void write('conn', CONNECTIONS_PATH, { action: 'update', id: active.id, displayName: nameDraft }, tt('common.saved')),
+                    },
+                    tt('conn.rename'),
+                  ),
+                ),
+                h(
+                  'div',
+                  { style: S.row },
+                  h('input', {
+                    style: S.input,
+                    value: urlDraft,
+                    placeholder: tt('endpoint.placeholder'),
+                    spellCheck: false,
+                    onChange: (event) => setUrlDraft(event.target.value),
+                    onKeyDown: (event) => {
+                      if (event.key === 'Enter') {
+                        void write('conn', CONNECTIONS_PATH, { action: 'update', id: active.id, baseURL: urlDraft }, tt('common.saved'))
+                      }
+                    },
+                  }),
+                  h(
+                    'button',
+                    {
+                      style: J(busy !== null || urlDraft.trim() === '' || urlDraft.trim() === active.baseURL, S.buttonDisabled, S.primary),
+                      disabled: busy !== null || urlDraft.trim() === '' || urlDraft.trim() === active.baseURL,
+                      onClick: () =>
+                        void write('conn', CONNECTIONS_PATH, { action: 'update', id: active.id, baseURL: urlDraft }, tt('common.saved')),
+                    },
+                    tt('endpoint.save'),
+                  ),
+                  defaults.baseURL !== active.baseURL
+                    ? h(
+                        'button',
+                        {
+                          style: S.button,
+                          disabled: busy !== null,
+                          onClick: () => {
+                            setUrlDraft(defaults.baseURL)
+                            void write('conn', CONNECTIONS_PATH, { action: 'update', id: active.id, baseURL: defaults.baseURL }, tt('common.saved'))
+                          },
+                        },
+                        tt('endpoint.reset'),
+                      )
+                    : null,
+                ),
+                h('p', { style: S.hint }, format(tt('conn.aliasHint'), {})),
+                h('p', { style: S.itemId }, `${tt('conn.alias')}: ${active.id}`),
+              ),
+
+              // ---- API Key ----
+              h(
+                'div',
+                { style: S.section },
+                h(
+                  'div',
+                  { style: S.sectionHead },
+                  h('h4', { style: S.sectionTitle }, tt('key.title')),
+                  h('span', { style: credential.configured === true ? S.badgeOn : S.badge }, credentialLabel),
+                ),
+                h('p', { style: S.hint }, format(tt('key.hint'), { ref: credential.ref })),
+                h(
+                  'div',
+                  { style: S.row },
+                  h('input', {
+                    style: S.input,
+                    type: 'password',
+                    value: keyDraft,
+                    placeholder: tt('key.placeholder'),
+                    spellCheck: false,
+                    autoComplete: 'off',
+                    onChange: (event) => setKeyDraft(event.target.value),
+                    onKeyDown: (event) => {
+                      if (event.key === 'Enter' && keyDraft.trim() !== '') {
+                        void write('key', KEY_PATH, { id: active.id, value: keyDraft }, tt('key.saved')).then(() => setKeyDraft(''))
+                      }
+                    },
+                  }),
+                  h(
+                    'button',
+                    {
+                      style: J(busy !== null || keyDraft.trim() === '' || credential.writable === false, S.buttonDisabled, S.primary),
+                      disabled: busy !== null || keyDraft.trim() === '' || credential.writable === false,
+                      onClick: () => {
+                        void write('key', KEY_PATH, { id: active.id, value: keyDraft }, tt('key.saved')).then(() => setKeyDraft(''))
+                      },
+                    },
+                    busy === 'key' ? tt('key.saving') : tt('key.save'),
+                  ),
+                  credential.configured === true
+                    ? h(
+                        'button',
+                        {
+                          style: J(busy !== null || credential.writable === false, S.buttonDisabled, S.button),
+                          disabled: busy !== null || credential.writable === false,
+                          onClick: () => void write('key', KEY_PATH, { id: active.id, clear: true }, tt('key.cleared')),
+                        },
+                        tt('key.clear'),
+                      )
+                    : null,
+                ),
+                credential.writable === false ? h('p', { style: S.statusError }, tt('key.readonly')) : null,
+              ),
+
+              // ---- 模型目录 ----
+              h(
+                'div',
+                { style: S.section },
+                h(
+                  'div',
+                  { style: S.sectionHead },
+                  h('h4', { style: S.sectionTitle }, tt('models.title')),
+                  h(
+                    'span',
+                    { style: S.badge },
+                    format(tt('models.count'), { total: catalog.models.length, chat: chatModels.length }),
+                  ),
+                  h('span', { style: S.spacer }),
+                  h(
+                    'button',
+                    {
+                      style: J(busy !== null, S.buttonDisabled, S.button),
+                      disabled: busy !== null,
+                      onClick: () => void write('refresh', REFRESH_PATH, { id: active.id }),
+                    },
+                    busy === 'refresh' ? tt('models.fetching') : tt('models.fetch'),
+                  ),
+                ),
+                catalogProblem !== null ? h('p', { style: S.statusError }, catalogProblem) : null,
+                catalog.fetchedAt > 0
+                  ? h('p', { style: S.hint }, format(tt('models.updated'), { time: clockOf(catalog.fetchedAt) }))
+                  : null,
+
+                !hasCatalog
+                  ? h('div', { style: S.empty }, tt('models.empty'))
+                  : h(
+                      'div',
+                      null,
+                      h(
+                        'div',
+                        { style: S.row },
+                        h('span', { style: S.status }, format(tt('models.offered'), { count: catalog.offeredCount })),
+                        h('span', { style: S.status }, `· ${selectionLabel}`),
+                        h('span', { style: S.spacer }),
+                        h(
+                          'button',
+                          { style: S.button, disabled: busy !== null || selection === 'all', onClick: selectAll },
+                          tt('models.selectAll'),
+                        ),
+                        h(
+                          'button',
+                          { style: S.button, disabled: busy !== null || selection === 'none', onClick: selectNone },
+                          tt('models.selectNone'),
+                        ),
+                      ),
+                      h(
+                        'div',
+                        { style: S.list },
+                        catalog.models.map((model) => {
+                          const limits = limitsOf(model)
+                          const overridden = Array.isArray(model.overridden) ? model.overridden : []
+                          // 不能用 <label> 包整行：里面的数字输入框会把点击转给复选框。
+                          return h(
+                            'div',
+                            { key: model.id, style: S.itemWrap },
+                            h(
+                              'div',
+                              {
+                                style: model.chat === true ? S.item : { ...S.item, ...S.itemExcluded },
+                                title: model.chat === true ? model.id : `${model.id} — ${tt('models.nonChat')}`,
+                              },
+                              h('input', {
+                                type: 'checkbox',
+                                checked: model.selected === true,
+                                disabled: busy !== null || model.chat !== true,
+                                onChange: () => toggleModel(model.id),
+                              }),
+                              h('span', { style: S.itemName }, model.name),
+                              model.name !== model.id ? h('span', { style: S.itemId }, model.id) : null,
+                              h('span', { style: S.spacer }),
+                              overridden.length > 0 && model.chat === true
+                                ? h('span', { style: S.customBadge }, tt('limits.custom'))
+                                : null,
+                              model.chat === true ? null : h('span', { style: S.badge }, tt('models.nonChat')),
+                            ),
+                            model.chat === true
+                              ? h(
+                                  'div',
+                                  { style: S.limitsRow },
+                                  h(
+                                    'span',
+                                    { style: S.limitsField },
+                                    h('span', { style: S.limitsLabel }, tt('limits.context')),
+                                    h('input', {
+                                      style: S.limitsInput,
+                                      type: 'number',
+                                      min: 1,
+                                      step: 1024,
+                                      value: limits.contextWindow === '' ? '' : String(limits.contextWindow),
+                                      disabled: busy !== null,
+                                      'aria-label': `${model.id} ${tt('limits.context')}`,
+                                      onChange: (event) => editLimit(model.id, { contextWindow: event.target.value }),
+                                    }),
+                                  ),
+                                  h(
+                                    'span',
+                                    { style: S.limitsField },
+                                    h('span', { style: S.limitsLabel }, tt('limits.maxTokens')),
+                                    h('input', {
+                                      style: S.limitsInput,
+                                      type: 'number',
+                                      min: 1,
+                                      step: 256,
+                                      value:
+                                        limits.maxTokens === null || limits.maxTokens === undefined
+                                          ? ''
+                                          : String(limits.maxTokens),
+                                      placeholder: tt('limits.maxTokens.auto'),
+                                      disabled: busy !== null,
+                                      'aria-label': `${model.id} ${tt('limits.maxTokens')}`,
+                                      onChange: (event) => editLimit(model.id, { maxTokens: event.target.value }),
+                                    }),
+                                  ),
+                                  h(
+                                    'button',
+                                    {
+                                      style: limits.image === true ? S.limitsMiniOn : S.limitsMini,
+                                      disabled: busy !== null,
+                                      title: tt('limits.image.hint'),
+                                      onClick: () => editLimit(model.id, { image: limits.image !== true }),
+                                    },
+                                    tt('limits.image'),
+                                  ),
+                                  h('span', { style: S.spacer }),
+                                  h(
+                                    'button',
+                                    {
+                                      style: limits.touched === true ? S.primary : S.limitsMini,
+                                      disabled: busy !== null,
+                                      onClick: () => void saveLimits(model, false),
+                                    },
+                                    tt('limits.save'),
+                                  ),
+                                  overridden.length > 0
+                                    ? h(
+                                        'button',
+                                        { style: S.limitsMini, disabled: busy !== null, onClick: () => void saveLimits(model, true) },
+                                        tt('limits.reset'),
+                                      )
+                                    : null,
+                                )
+                              : null,
+                          )
+                        }),
+                      ),
+                    ),
+              ),
+
+              // ---- 接入开关 ----
+              h(
+                'div',
+                { style: S.section },
+                h(
+                  'div',
+                  { style: S.sectionHead },
+                  h('h4', { style: S.sectionTitle }, tt('provider.title')),
+                  h('span', { style: active.enabled ? S.badgeOn : S.badge }, active.enabled ? tt('provider.on') : tt('provider.off')),
+                  h('span', { style: S.spacer }),
+                  h(
+                    'button',
+                    {
+                      style: active.enabled ? S.switchTrackOn : S.switchTrack,
+                      role: 'switch',
+                      'aria-checked': active.enabled === true,
+                      'aria-label': tt('provider.title'),
+                      disabled: busy !== null || provider.llmAvailable !== true,
+                      onClick: () =>
+                        void write('provider', CONNECTIONS_PATH, {
+                          action: 'update',
+                          id: active.id,
+                          enabled: active.enabled !== true,
+                        }),
+                    },
+                    h('span', { style: active.enabled ? S.switchKnobOn : S.switchKnob }),
+                  ),
+                ),
+                h('p', { style: S.hint }, tt('provider.hint')),
+                h('p', { style: S.hint }, format(tt('provider.route'), { id: active.id })),
+                active.protocol?.endpoint
+                  ? h(
+                      'p',
+                      { style: S.hint },
+                      format(tt('provider.protocol'), {
+                        api: active.protocol.api ?? 'openai-responses',
+                        efforts: (active.protocol.efforts ?? []).join(' / '),
+                      }),
+                    )
+                  : null,
+                provider.llmAvailable !== true ? h('p', { style: S.statusError }, tt('provider.noLlm')) : null,
+                provider.error !== null && provider.error !== undefined
+                  ? h('p', { style: S.statusError }, format(tt('provider.failed'), { error: provider.error }))
+                  : null,
+                off && credential !== null && credential.configured !== true
+                  ? h('p', { style: S.hint }, tt('provider.needsKey'))
+                  : null,
+              ),
             ),
-          ),
-          h('p', { style: S.hint }, tt('provider.hint')),
-          h('p', { style: S.hint }, format(tt('provider.route'), { id: snapshot.providerId })),
-          snapshot.protocol?.endpoint
-            ? h(
-                'p',
-                { style: S.hint },
-                format(tt('provider.protocol'), {
-                  api: snapshot.protocol.api ?? 'openai-responses',
-                  efforts: (snapshot.protocol.efforts ?? []).join(' / '),
-                }),
-              )
-            : null,
-          provider.llmAvailable !== true ? h('p', { style: S.statusError }, tt('provider.noLlm')) : null,
-          provider.error !== null && provider.error !== undefined
-            ? h('p', { style: S.statusError }, format(tt('provider.failed'), { error: provider.error }))
-            : null,
-        ),
 
         // ---- 一行结果 ----
-        note === null
-          ? null
-          : h('p', { style: note.kind === 'ok' ? S.statusOk : S.statusError }, note.text),
+        note === null ? null : h('p', { style: note.kind === 'ok' ? S.statusOk : S.statusError }, note.text),
       )
     }
 

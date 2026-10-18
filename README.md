@@ -3,12 +3,14 @@
 把 [`https://ai.qpcmqam.cn/v1`](https://ai.qpcmqam.cn/v1) 这个 OpenAI 兼容网关接成
 DSH 的模型来源，并给出一块可以在 Web UI 里操作的面板。
 
+可以接**多组**：每组有自己的端点、Key 和模型清单，同时出现在模型选择器里。
+
 ## 安装
 
 一条命令，不需要 `git`、不需要放行构建脚本、不需要装任何工具：
 
 ```bash
-dsh plugin --profile desktop add https://github.com/llersakuya/dsh-connect-qpcm-gateway/releases/download/v0.3.0/dsh-connect-qpcm-gateway-0.3.0.tgz
+dsh plugin --profile desktop add https://github.com/llersakuya/dsh-connect-qpcm-gateway/releases/download/v0.4.0/dsh-connect-qpcm-gateway-0.4.0.tgz
 ```
 
 **桌面版用户**也可以在 **设置 → 插件 → 安装 bundle** 里直接粘贴同一个 `.tgz` 地址。
@@ -40,13 +42,32 @@ dsh plugin --profile desktop add github:llersakuya/dsh-connect-qpcm-gateway
 （`peerDependencies`，且全部标为 optional）。这也意味着它必须跑在装有
 `@earendil-works/pi-ai` 的 DSH 上——正常的桌面版都满足。
 
+## 多组 API
+
+面板最上面是分组列表。**添加一组**之后，这一组有自己的：
+
+- **Base URL**（各组的端点互相独立）
+- **API Key**（存在各自的凭据引用里，互不串用）
+- **模型清单**（各自的 `/models` 结果与勾选）
+- **接入开关**（可以只开其中一组）
+
+各组的模型**同时**出现在模型选择器里，以路由 id 区分——模型选择器里看到的是
+`分组名 / 模型名`。默认第一组的 id 是 `qpcm-gateway`（v0.3.x 就用这个，
+所以老会话里的模型引用不会失效），之后新建的按你填的名字派生。
+
+最多 8 组。这个上限是刻意的：每一组都会往模型选择器里塞条目，没有上限会把那里
+淹掉。
+
+> 一组的 Key 只有存进它自己的凭据引用才生效。删除一组会保留它的 Key 引用
+> （不删你磁盘上的密钥），但不再使用。
+
 ## 它做什么
 
 - 在 **插件 → QPCM 网关接入** 里填 Base URL、存 API Key、拉取模型目录、勾选要提供的模型。
 - 打开「接入」开关后，被勾选的模型直接出现在模型选择器里，走
   `POST {baseURL}/responses`（OpenAI **Responses** 协议，含工具调用、流式、推理档位）。
 - 每个模型可以**单独调**上下文窗口、最大输出 token、输入模态，见下一节。
-- 在 **设置 → 模型** 里，这条路由以 `qpcm-gateway` 的名字出现，和手写 `llm-pi-ai`
+- 在 **设置 → 模型** 里，每条连接以它自己的路由 id 出现，和手写 `llm-pi-ai`
   的那几条并列。
 
 ## 按模型自定义
