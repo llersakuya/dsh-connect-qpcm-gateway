@@ -8,7 +8,7 @@ DSH 的模型来源，并给出一块可以在 Web UI 里操作的面板。
 一条命令，不需要 `git`、不需要放行构建脚本、不需要装任何工具：
 
 ```bash
-dsh plugin --profile desktop add https://github.com/llersakuya/dsh-connect-qpcm-gateway/releases/download/v0.2.0/dsh-connect-qpcm-gateway-0.2.0.tgz
+dsh plugin --profile desktop add https://github.com/llersakuya/dsh-connect-qpcm-gateway/releases/download/v0.3.0/dsh-connect-qpcm-gateway-0.3.0.tgz
 ```
 
 **桌面版用户**也可以在 **设置 → 插件 → 安装 bundle** 里直接粘贴同一个 `.tgz` 地址。
@@ -45,8 +45,37 @@ dsh plugin --profile desktop add github:llersakuya/dsh-connect-qpcm-gateway
 - 在 **插件 → QPCM 网关接入** 里填 Base URL、存 API Key、拉取模型目录、勾选要提供的模型。
 - 打开「接入」开关后，被勾选的模型直接出现在模型选择器里，走
   `POST {baseURL}/responses`（OpenAI **Responses** 协议，含工具调用、流式、推理档位）。
+- 每个模型可以**单独调**上下文窗口、最大输出 token、输入模态，见下一节。
 - 在 **设置 → 模型** 里，这条路由以 `qpcm-gateway` 的名字出现，和手写 `llm-pi-ai`
   的那几条并列。
+
+## 按模型自定义
+
+网关的 `/models` 只给 id 和名字，不给窗口和上限——所以这些数字原本是本插件写死的
+兜底值。现在每个模型后面都有一行设置：
+
+| 项 | 含义 | 默认 |
+| --- | --- | --- |
+| **上下文** | `contextWindow`，算 token 预算用 | `128000` |
+| **最大输出** | `maxTokens` → 请求里的 `max_output_tokens` | 留空 = 不声明 |
+| **收图** | 是否把 `image` 加进 `input` 模态 | 只收文本 |
+
+改完点那一行的**保存**才生效；有覆盖的模型会带一个「已自定义」标记，点**恢复默认**可以撤掉。
+
+三个字段都真的影响请求，不是摆设：
+
+- `maxTokens` 会经 pi-ai 的
+  `clampMaxTokensToContext(model, context, maxTokens)` 落到 `max_output_tokens`，
+  并且**被上下文窗口反向截断**——窗口设得比输出上限还小的时候，实际发出去的数字
+  会比填的小。
+- `input` 决定带图请求能不能发。**这个网关多数模型不收图**，打开后带图会失败，
+  所以默认是关的。
+
+「最大输出」留空是有意的：网关没声明上限，猜一个数字等于把「平台没说」写成
+「平台说了」。填了就是明确告诉 DSH 你希望的上限。
+
+> 设置存在插件自己的状态文件里（`~/.dsh/state/<profile>/dsh-connect-qpcm-gateway/state.json`），
+> 不写进你的 `llm-pi-ai` 配置。
 
 ## 为什么走 `/responses` 而不是 `/chat/completions`
 

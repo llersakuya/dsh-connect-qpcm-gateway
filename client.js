@@ -22,6 +22,7 @@ window.__ModuleLoader__.load({
     const CONFIG_PATH = `/api/${NS}/config`
     const KEY_PATH = `/api/${NS}/key`
     const REFRESH_PATH = `/api/${NS}/refresh`
+    const LIMITS_PATH = `/api/${NS}/limits`
     /** 请求超时：面板上每一次点击都要有个上限，否则按钮会永久转圈。 */
     const FETCH_TIMEOUT_MS = 20_000
 
@@ -68,6 +69,19 @@ window.__ModuleLoader__.load({
       'models.selection.list': '只提供勾选的模型',
       'models.selection.none': '一个都不提供',
       'models.updated': '更新于 {time}',
+
+      'limits.custom': '已自定义',
+      'limits.context': '上下文',
+      'limits.maxTokens': '最大输出',
+      'limits.maxTokens.auto': '自动',
+      'limits.image': '收图',
+      'limits.image.hint': '声明这个模型能接收图片输入。网关多数模型不接受，打开后带图请求可能失败。',
+      'limits.save': '保存',
+      'limits.reset': '恢复默认',
+      'limits.reset.done': '已恢复默认。',
+      'limits.saved': '已保存这个模型的限制。',
+      'limits.badContext': '上下文窗口必须是正整数。',
+      'limits.badMaxTokens': '最大输出必须是正整数，或者留空表示自动。',
 
       'provider.title': '接入',
       'provider.hint': '打开后，这些模型会出现在模型选择器里。',
@@ -129,6 +143,19 @@ window.__ModuleLoader__.load({
       'models.selection.list': 'Offering only the ticked models',
       'models.selection.none': 'Offering nothing',
       'models.updated': 'Updated {time}',
+
+      'limits.custom': 'customized',
+      'limits.context': 'context',
+      'limits.maxTokens': 'max output',
+      'limits.maxTokens.auto': 'auto',
+      'limits.image': 'images',
+      'limits.image.hint': 'Declare that this model accepts image input. Most gateway models do not, so image requests may fail afterwards.',
+      'limits.save': 'Save',
+      'limits.reset': 'Reset',
+      'limits.reset.done': 'Reset to the default.',
+      'limits.saved': 'Saved the limits for this model.',
+      'limits.badContext': 'The context window must be a positive integer.',
+      'limits.badMaxTokens': 'The max output must be a positive integer, or empty for automatic.',
 
       'provider.title': 'Integration',
       'provider.hint': 'Once on, these models appear in the model selector.',
@@ -268,6 +295,61 @@ window.__ModuleLoader__.load({
       itemName: { fontWeight: 500 },
       itemId: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' },
       spacer: { flex: '1 1 auto' },
+      // ---- 逐模型限制 ----
+      itemWrap: { display: 'flex', flexDirection: 'column' },
+      limitsRow: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: 8,
+        padding: '2px 8px 10px 30px',
+        fontSize: 12,
+      },
+      limitsField: { display: 'flex', alignItems: 'center', gap: 5 },
+      limitsLabel: { color: 'var(--dsw-alias-label-secondary)', whiteSpace: 'nowrap' },
+      limitsInput: {
+        width: 92,
+        height: 26,
+        padding: '0 7px',
+        borderRadius: 6,
+        border: '1px solid var(--dsw-alias-border-l2)',
+        background: 'var(--dsw-alias-bg-layer-1)',
+        color: 'var(--dsw-alias-label-primary)',
+        fontSize: 12,
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+      },
+      limitsMini: {
+        height: 26,
+        padding: '0 9px',
+        borderRadius: 6,
+        border: '1px solid var(--dsw-alias-border-l1)',
+        background: 'var(--dsw-alias-bg-layer-2)',
+        color: 'var(--dsw-alias-label-primary)',
+        fontSize: 12,
+        fontFamily: 'inherit',
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      },
+      limitsMiniOn: {
+        height: 26,
+        padding: '0 9px',
+        borderRadius: 6,
+        border: '1px solid var(--dsw-alias-brand-primary)',
+        background: 'var(--dsw-alias-brand-primary)',
+        color: '#fff',
+        fontSize: 12,
+        fontFamily: 'inherit',
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      },
+      customBadge: {
+        fontSize: 10.5,
+        padding: '0 6px',
+        borderRadius: 999,
+        border: '1px solid var(--dsw-alias-border-l2)',
+        color: 'var(--dsw-alias-label-secondary)',
+        whiteSpace: 'nowrap',
+      },
       status: { fontSize: 12, color: 'var(--dsw-alias-label-secondary)' },
       statusError: { fontSize: 12, color: 'var(--dsw-alias-state-error-primary)' },
       statusOk: { fontSize: 12, color: 'var(--dsw-alias-state-success-primary)' },
@@ -367,6 +449,9 @@ window.__ModuleLoader__.load({
       const [keyDraft, setKeyDraft] = useState('')
       const [busy, setBusy] = useState(null)
       const [note, setNote] = useState(null)
+      // 逐模型限制的编辑草稿：`{ modelId: {contextWindow, maxTokens, image} }`。
+      // 只有被编辑过的模型才在这里，其余直接显示 snapshot 里的生效值。
+      const [limitDrafts, setLimitDrafts] = useState({})
       const [, setLocaleRevision] = useState(0)
 
       /** 组件还活着吗——异步回调回来时用它挡掉过期 setState。 */
@@ -445,6 +530,75 @@ window.__ModuleLoader__.load({
           }
         },
         [load, tt],
+      )
+
+      /** 某个模型当前要显示的三个值：草稿优先，否则用 snapshot 里的生效值。 */
+      const limitsOf = useCallback(
+        (model) => {
+          const draft = limitDrafts[model.id]
+          if (draft !== undefined) return draft
+          const limits = model.limits ?? {}
+          return {
+            contextWindow: limits.contextWindow ?? 128000,
+            maxTokens: limits.maxTokens ?? '',
+            input: Array.isArray(limits.input) ? limits.input : ['text'],
+            image: (Array.isArray(limits.input) ? limits.input : ['text']).includes('image'),
+            touched: false,
+          }
+        },
+        [limitDrafts],
+      )
+
+      /** 改草稿（不落盘——面板上还有「保存」这一步，避免每敲一个数字就重建适配器）。 */
+      const editLimit = useCallback((id, patch) => {
+        setLimitDrafts((previous) => {
+          const base = previous[id] ?? {}
+          return { ...previous, [id]: { ...base, ...patch, touched: true } }
+        })
+        setNote(null)
+      }, [])
+
+      /** 把某个模型的限制写回 Host。`reset` 为真时删掉覆盖、回到默认。 */
+      const saveLimits = useCallback(
+        async (model, reset) => {
+          if (reset === true) {
+            const body = await write('limits', LIMITS_PATH, { id: model.id, reset: true }, tt('limits.reset.done'))
+            if (body !== null && body.ok === true) {
+              setLimitDrafts((previous) => {
+                const next = { ...previous }
+                delete next[model.id]
+                return next
+              })
+            }
+            return
+          }
+          const draft = limitsOf(model)
+          const window = Number(draft.contextWindow)
+          const max = draft.maxTokens === '' || draft.maxTokens === null ? null : Number(draft.maxTokens)
+          if (!Number.isInteger(window) || window <= 0) {
+            setNote({ kind: 'error', text: tt('limits.badContext') })
+            return
+          }
+          if (max !== null && (!Number.isInteger(max) || max <= 0)) {
+            setNote({ kind: 'error', text: tt('limits.badMaxTokens') })
+            return
+          }
+          const input = draft.image === true ? ['text', 'image'] : ['text']
+          const body = await write(
+            'limits',
+            LIMITS_PATH,
+            { id: model.id, contextWindow: window, ...(max === null ? {} : { maxTokens: max }), input },
+            tt('limits.saved'),
+          )
+          if (body !== null && body.ok === true) {
+            setLimitDrafts((previous) => {
+              const next = { ...previous }
+              delete next[model.id]
+              return next
+            })
+          }
+        },
+        [limitsOf, tt, write],
       )
 
       // ---- 首屏 ----
@@ -695,26 +849,99 @@ window.__ModuleLoader__.load({
                 h(
                   'div',
                   { style: S.list },
-                  catalog.models.map((model) =>
-                    h(
-                      'label',
-                      {
-                        key: model.id,
-                        style: model.chat === true ? S.item : { ...S.item, ...S.itemExcluded },
-                        title: model.chat === true ? model.id : `${model.id} — ${tt('models.nonChat')}`,
-                      },
-                      h('input', {
-                        type: 'checkbox',
-                        checked: model.selected === true,
-                        disabled: busy !== null || model.chat !== true,
-                        onChange: () => toggleModel(model.id),
-                      }),
-                      h('span', { style: S.itemName }, model.name),
-                      model.name !== model.id ? h('span', { style: S.itemId }, model.id) : null,
-                      h('span', { style: S.spacer }),
-                      model.chat === true ? null : h('span', { style: S.badge }, tt('models.nonChat')),
-                    ),
-                  ),
+                  catalog.models.map((model) => {
+                    const limits = limitsOf(model)
+                    const overridden = Array.isArray(model.overridden) ? model.overridden : []
+                    // 不能用 <label> 包整行：里面的数字输入框会把点击转给复选框。
+                    return h(
+                      'div',
+                      { key: model.id, style: S.itemWrap },
+                      h(
+                        'div',
+                        {
+                          style: model.chat === true ? S.item : { ...S.item, ...S.itemExcluded },
+                          title: model.chat === true ? model.id : `${model.id} — ${tt('models.nonChat')}`,
+                        },
+                        h('input', {
+                          type: 'checkbox',
+                          checked: model.selected === true,
+                          disabled: busy !== null || model.chat !== true,
+                          onChange: () => toggleModel(model.id),
+                        }),
+                        h('span', { style: S.itemName }, model.name),
+                        model.name !== model.id ? h('span', { style: S.itemId }, model.id) : null,
+                        h('span', { style: S.spacer }),
+                        overridden.length > 0 && model.chat === true
+                          ? h('span', { style: S.customBadge }, tt('limits.custom'))
+                          : null,
+                        model.chat === true ? null : h('span', { style: S.badge }, tt('models.nonChat')),
+                      ),
+                      model.chat === true
+                        ? h(
+                            'div',
+                            { style: S.limitsRow },
+                            h(
+                              'span',
+                              { style: S.limitsField },
+                              h('span', { style: S.limitsLabel }, tt('limits.context')),
+                              h('input', {
+                                style: S.limitsInput,
+                                type: 'number',
+                                min: 1,
+                                step: 1024,
+                                value: limits.contextWindow === '' ? '' : String(limits.contextWindow),
+                                disabled: busy !== null,
+                                'aria-label': `${model.id} ${tt('limits.context')}`,
+                                onChange: (event) => editLimit(model.id, { contextWindow: event.target.value }),
+                              }),
+                            ),
+                            h(
+                              'span',
+                              { style: S.limitsField },
+                              h('span', { style: S.limitsLabel }, tt('limits.maxTokens')),
+                              h('input', {
+                                style: S.limitsInput,
+                                type: 'number',
+                                min: 1,
+                                step: 256,
+                                value: limits.maxTokens === null || limits.maxTokens === undefined ? '' : String(limits.maxTokens),
+                                placeholder: tt('limits.maxTokens.auto'),
+                                disabled: busy !== null,
+                                'aria-label': `${model.id} ${tt('limits.maxTokens')}`,
+                                onChange: (event) => editLimit(model.id, { maxTokens: event.target.value }),
+                              }),
+                            ),
+                            h(
+                              'button',
+                              {
+                                style: limits.image === true ? S.limitsMiniOn : S.limitsMini,
+                                disabled: busy !== null,
+                                title: tt('limits.image.hint'),
+                                onClick: () => editLimit(model.id, { image: limits.image !== true }),
+                              },
+                              tt('limits.image'),
+                            ),
+                            h('span', { style: S.spacer }),
+                            h(
+                              'button',
+                              {
+                                style: limits.touched === true ? S.primary : S.limitsMini,
+                                disabled: busy !== null,
+                                onClick: () => void saveLimits(model, false),
+                              },
+                              tt('limits.save'),
+                            ),
+                            overridden.length > 0
+                              ? h(
+                                  'button',
+                                  { style: S.limitsMini, disabled: busy !== null, onClick: () => void saveLimits(model, true) },
+                                  tt('limits.reset'),
+                                )
+                              : null,
+                          )
+                        : null,
+                    )
+                  }),
                 ),
               ),
         ),
