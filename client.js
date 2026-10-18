@@ -646,35 +646,54 @@ window.__ModuleLoader__.load({
       /** 草稿的键：跨连接不能撞，所以带上连接 id。 */
       const draftKey = (modelId) => `${active === null ? '' : active.id}/${modelId}`
 
-      /** 某个模型当前要显示的三个值：草稿优先，否则用 snapshot 里的生效值。 */
+      /**
+       * 某个模型在**没有任何草稿**时的显示值，即 snapshot 里的生效值。
+       *
+       * `maxTokens` 用 `''` 而不是 `null` 表示「没设」：输入框的 value 只在两者
+       * 都不是时才是空串，`null` 会被渲染成字符串。
+       */
+      const baseLimitsOf = useCallback((model) => {
+        const limits = model.limits ?? {}
+        const input = Array.isArray(limits.input) ? limits.input : ['text']
+        return {
+          contextWindow: limits.contextWindow ?? 128000,
+          maxTokens: limits.maxTokens === null || limits.maxTokens === undefined ? '' : limits.maxTokens,
+          input,
+          image: input.includes('image'),
+          touched: false,
+        }
+      }, [])
+
+      /**
+       * 某个模型当前要显示的三个值。
+       *
+       * 草稿是**覆盖**而不是替换：点「收图」只记下 `image`，上下文窗口与最大
+       * 输出仍要显示 snapshot 里的值，否则那两个框会空掉。
+       */
       const limitsOf = useCallback(
         (model) => {
+          const base = baseLimitsOf(model)
           const draft = limitDrafts[draftKey(model.id)]
-          if (draft !== undefined) return draft
-          const limits = model.limits ?? {}
-          const input = Array.isArray(limits.input) ? limits.input : ['text']
-          return {
-            contextWindow: limits.contextWindow ?? 128000,
-            maxTokens: limits.maxTokens ?? '',
-            input,
-            image: input.includes('image'),
-            touched: false,
-          }
+          return draft === undefined ? base : { ...base, ...draft }
         },
-        [limitDrafts, active],
+        [limitDrafts, active, baseLimitsOf],
       )
 
-      /** 改草稿（不落盘——面板上还有「保存」这一步，避免每敲一个数字就重建适配器）。 */
+      /**
+       * 改草稿（不落盘——面板上还有「保存」这一步，避免每敲一个数字就重建适配器）。
+       *
+       * 新草稿先铺满当前生效值，这样后续任何单字段修改都不会把别的字段抹掉。
+       */
       const editLimit = useCallback(
-        (modelId, patch) => {
-          const key = draftKey(modelId)
+        (model, patch) => {
+          const key = draftKey(model.id)
           setLimitDrafts((previous) => {
-            const base = previous[key] ?? {}
+            const base = previous[key] ?? baseLimitsOf(model)
             return { ...previous, [key]: { ...base, ...patch, touched: true } }
           })
           setNote(null)
         },
-        [active],
+        [active, baseLimitsOf],
       )
 
       /** 把某个模型的限制写回 Host。`reset` 为真时删掉覆盖、回到默认。 */
@@ -1158,7 +1177,7 @@ window.__ModuleLoader__.load({
                                       value: limits.contextWindow === '' ? '' : String(limits.contextWindow),
                                       disabled: busy !== null,
                                       'aria-label': `${model.id} ${tt('limits.context')}`,
-                                      onChange: (event) => editLimit(model.id, { contextWindow: event.target.value }),
+                                      onChange: (event) => editLimit(model, { contextWindow: event.target.value }),
                                     }),
                                   ),
                                   h(
@@ -1177,7 +1196,7 @@ window.__ModuleLoader__.load({
                                       placeholder: tt('limits.maxTokens.auto'),
                                       disabled: busy !== null,
                                       'aria-label': `${model.id} ${tt('limits.maxTokens')}`,
-                                      onChange: (event) => editLimit(model.id, { maxTokens: event.target.value }),
+                                      onChange: (event) => editLimit(model, { maxTokens: event.target.value }),
                                     }),
                                   ),
                                   h(
@@ -1186,7 +1205,7 @@ window.__ModuleLoader__.load({
                                       style: limits.image === true ? S.limitsMiniOn : S.limitsMini,
                                       disabled: busy !== null,
                                       title: tt('limits.image.hint'),
-                                      onClick: () => editLimit(model.id, { image: limits.image !== true }),
+                                      onClick: () => editLimit(model, { image: limits.image !== true }),
                                     },
                                     tt('limits.image'),
                                   ),
