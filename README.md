@@ -5,34 +5,30 @@ DSH 的模型来源，并给出一块可以在 Web UI 里操作的面板。
 
 ## 安装
 
-需要一台已经装好 DeepSeek Harness 的机器，并且 **PATH 里要有 `git`**
-（`github:` 依赖由 pnpm 通过 git 解析；没有 git 会报 `ERR_PNPM_GIT_RESOLVE_FAILED`）。
+一条命令，不需要 `git`、不需要放行构建脚本、不需要装任何工具：
 
-**在桌面版里**：打开 **设置 → 插件**，在「安装 bundle」里填
-`github:llersakuya/dsh-connect-qpcm-gateway`，装完在插件列表里启用。
+```bash
+dsh plugin --profile desktop add https://github.com/llersakuya/dsh-connect-qpcm-gateway/releases/download/v0.1.0/dsh-connect-qpcm-gateway-0.1.0.tgz
+```
 
-**在命令行里**：
+**桌面版用户**也可以在 **设置 → 插件 → 安装 bundle** 里直接粘贴同一个 `.tgz` 地址。
+
+装完打开 **插件 → QPCM 网关接入**，粘一次你的 API Key，点「拉取模型」，
+勾选要用的模型，打开「接入」开关。模型立刻出现在模型选择器里，不用重启。
+
+### 为什么用 `.tgz` 而不是 `github:` 地址
+
+| | `.tgz`（推荐） | `github:llersakuya/...` |
+| --- | --- | --- |
+| 需要本机有 `git` | 不需要 | **需要**，否则报 `ERR_PNPM_GIT_RESOLVE_FAILED` |
+| 需要放行 pnpm 构建 | 不需要 | 视 pnpm 策略而定，可能要改 `allowBuilds` |
+| 版本 | 地址里锁死 | 默认跟随 `main`，每次装到的可能不同 |
+
+git 方式仍然可用，适合想跟最新提交的人：
 
 ```bash
 dsh plugin --profile desktop add github:llersakuya/dsh-connect-qpcm-gateway
 ```
-
-`dsh plugin` 把参数原样转给 pnpm，所以下面几种写法都能用：
-
-| 写法 | 说明 |
-| --- | --- |
-| `github:llersakuya/dsh-connect-qpcm-gateway` | 跟随 `main` 最新提交 |
-| `github:llersakuya/dsh-connect-qpcm-gateway#v0.1.0` | 固定在某个 tag |
-| `https://github.com/llersakuya/dsh-connect-qpcm-gateway` | 同上，完整 URL |
-
-> **第一次装可能被 pnpm 拦下。** 从 git 装的包会在安装时跑 `prepare` 脚本，
-> pnpm 默认不允许。如果报错里出现 `git-hosted plugins build on install via their
-> prepare script`，按提示把包的精确名字加进
-> `~/.dsh/profiles/<profile>/pnpm-workspace.yaml` 的 `allowBuilds` 下，再装一次。
-> 本插件没有构建步骤，这一步放行的是 pnpm 的通用策略。
-
-装好之后打开 **插件 → QPCM 网关接入**：填 API Key → 拉取模型 → 勾选要用的
-模型 → 打开「接入」开关。模型立刻出现在模型选择器里，不需要重启。
 
 > 改过本插件的 Host 侧代码后，要把它关掉再打开一次才会重新加载：HMR 默认忽略
 > `**/node_modules`，而插件正好装在那里。
