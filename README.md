@@ -10,7 +10,7 @@ DSH 的模型来源，并给出一块可以在 Web UI 里操作的面板。
 一条命令，不需要 `git`、不需要放行构建脚本、不需要装任何工具：
 
 ```bash
-dsh plugin --profile desktop add https://github.com/llersakuya/dsh-connect-qpcm-gateway/releases/download/v0.4.2/dsh-connect-qpcm-gateway-0.4.2.tgz
+dsh plugin --profile desktop add https://github.com/llersakuya/dsh-connect-qpcm-gateway/releases/download/v0.4.3/dsh-connect-qpcm-gateway-0.4.3.tgz
 ```
 
 **桌面版用户**也可以在 **设置 → 插件 → 安装 bundle** 里直接粘贴同一个 `.tgz` 地址。
