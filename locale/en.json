@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "QPCM Gateway",
+    "title": "Model Gateway Connector",
     "description": "Connect https://ai.qpcmqam.cn/v1 as an OpenAI-compatible model source for DSH: set the Base URL and API key in the panel, fetch the model catalogue, tick the models you want, then pick them straight from the model selector."
   }
 }
