@@ -31,7 +31,7 @@ window.__ModuleLoader__.load({
     // ---------------------------------------------------------------------
 
     const zh = {
-      'panel.title': 'QPCM 网关接入',
+      'panel.title': '模型网关接入工具',
       'panel.subtitle': '把 OpenAI 兼容网关接成 DSH 的模型来源',
       'panel.loading': '读取中…',
       'panel.error': '读取失败：{error}',
@@ -125,7 +125,7 @@ window.__ModuleLoader__.load({
     }
 
     const en = {
-      'panel.title': 'QPCM Gateway',
+      'panel.title': 'Model Gateway Connector',
       'panel.subtitle': 'Connect an OpenAI-compatible gateway as a DSH model source',
       'panel.loading': 'Loading…',
       'panel.error': 'Could not read: {error}',
@@ -654,9 +654,9 @@ window.__ModuleLoader__.load({
        */
       const baseLimitsOf = useCallback((model) => {
         const limits = model.limits ?? {}
-        const input = Array.isArray(limits.input) ? limits.input : ['text']
+        const input = Array.isArray(limits.input) ? limits.input : ['text', 'image']
         return {
-          contextWindow: limits.contextWindow ?? 128000,
+          contextWindow: limits.contextWindow ?? 256000,
           maxTokens: limits.maxTokens === null || limits.maxTokens === undefined ? '' : limits.maxTokens,
           input,
           image: input.includes('image'),
