@@ -1,8 +1,8 @@
 {
   "name": "dsh-connect-qpcm-gateway",
-  "displayName": "DSH Connect QPCM Gateway",
+  "displayName": "模型网关接入工具",
   "icon": "./icon.svg",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "QPCM gateway (ai.qpcmqam.cn) connect bundle for the Harness Web UI: a settings page to enter the Base URL and API key, fetch the model list, toggle which models are offered, and optionally register the gateway as a DSH OpenAI-compatible LLM provider.",
   "keywords": [
     "dsh-plugin",
