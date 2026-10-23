@@ -10,12 +10,12 @@ DSH 的模型来源，并给出一块可以在 Web UI 里操作的面板。
 一条命令，不需要 `git`、不需要放行构建脚本、不需要装任何工具：
 
 ```bash
-dsh plugin --profile desktop add https://github.com/llersakuya/dsh-connect-qpcm-gateway/releases/download/v0.4.3/dsh-connect-qpcm-gateway-0.4.3.tgz
+dsh plugin --profile desktop add https://github.com/llersakuya/dsh-connect-qpcm-gateway/releases/download/v0.5.0/dsh-connect-qpcm-gateway-0.5.0.tgz
 ```
 
 **桌面版用户**也可以在 **设置 → 插件 → 安装 bundle** 里直接粘贴同一个 `.tgz` 地址。
 
-装完打开 **插件 → QPCM 网关接入**，粘一次你的 API Key，点「保存并验证」。
+装完打开 **插件 → 模型网关接入工具**，粘一次你的 API Key，点「保存并验证」。
 目录拉通之后插件会**自动接入**，模型立刻出现在模型选择器里，不用重启，也不用
 再去拨那个开关。
 
@@ -63,7 +63,7 @@ dsh plugin --profile desktop add github:llersakuya/dsh-connect-qpcm-gateway
 
 ## 它做什么
 
-- 在 **插件 → QPCM 网关接入** 里填 Base URL、存 API Key、拉取模型目录、勾选要提供的模型。
+- 在 **插件 → 模型网关接入工具** 里填 Base URL、存 API Key、拉取模型目录、勾选要提供的模型。
 - 打开「接入」开关后，被勾选的模型直接出现在模型选择器里，走
   `POST {baseURL}/responses`（OpenAI **Responses** 协议，含工具调用、流式、推理档位）。
 - 每个模型可以**单独调**上下文窗口、最大输出 token、输入模态，见下一节。
@@ -77,9 +77,9 @@ dsh plugin --profile desktop add github:llersakuya/dsh-connect-qpcm-gateway
 
 | 项 | 含义 | 默认 |
 | --- | --- | --- |
-| **上下文** | `contextWindow`，算 token 预算用 | `128000` |
+| **上下文** | `contextWindow`，算 token 预算用 | `256000` |
 | **最大输出** | `maxTokens` → 请求里的 `max_output_tokens` | 留空 = 不声明 |
-| **收图** | 是否把 `image` 加进 `input` 模态 | 只收文本 |
+| **收图** | 是否把 `image` 加进 `input` 模态 | 默认开启 |
 
 改完点那一行的**保存**才生效；有覆盖的模型会带一个「已自定义」标记，点**恢复默认**可以撤掉。
 
@@ -89,8 +89,8 @@ dsh plugin --profile desktop add github:llersakuya/dsh-connect-qpcm-gateway
   `clampMaxTokensToContext(model, context, maxTokens)` 落到 `max_output_tokens`，
   并且**被上下文窗口反向截断**——窗口设得比输出上限还小的时候，实际发出去的数字
   会比填的小。
-- `input` 决定带图请求能不能发。**这个网关多数模型不收图**，打开后带图会失败，
-  所以默认是关的。
+- `input` 决定带图请求能不能发。默认开启；某个模型带图报错时，把那一行的**收图**
+  关掉即可（改动只影响该模型）。
 
 「最大输出」留空是有意的：网关没声明上限，猜一个数字等于把「平台没说」写成
 「平台说了」。填了就是明确告诉 DSH 你希望的上限。
@@ -110,19 +110,31 @@ dsh plugin --profile desktop add github:llersakuya/dsh-connect-qpcm-gateway
 
 文本、工具调用、流式、多轮对话、系统提示在 `/responses` 上逐项验证通过。
 
-### 推理档位只声明 off / medium / high
+### 推理档位：off 到 max 全开，外加自动档
 
-`thinkingLevelMap` 是按实测的 `reasoning_tokens` 定的，不是照着 OpenAI 文档抄的：
+`thinkingLevelMap` 声明整条阶梯，全部可选：
 
-| 档位 | 实测表现 |
+| 档位（菜单里的名字） | 发出去的 `reasoning.effort` |
 | --- | --- |
-| `minimal` | 多数模型 0 token，什么都不做 |
-| `low` | 半数模型 0 token |
-| `medium` | 有产出，但部分模型仍为 0 |
-| `high` | 稳定产出明文推理 |
+| Off | `none` |
+| Minimal | `minimal` |
+| Low | `low` |
+| Medium | `medium` |
+| High | `high` |
+| Xhigh | `xhigh` |
+| Max（最高档） | `max` |
+| （自动） | 不发 `reasoning`，由网关自己决定 |
 
-`minimal` / `low` 显式钉成 `null`（不提供）——留着它们等于在菜单里承诺两个
-多数模型上什么都不做的档位。`off` 映射到线上字面量 `none`，五个模型逐个验证 200。
+不声明 `defaultEffort`，模型选择器里就会多出一项「provider default」——那就是
+自动档：请求里不带 `reasoning` 参数，跟手动选档位是两条不同的路径。
+
+七个发送值在两条路由上都逐个实测过，全部 HTTP 200（`deepseek-v4-pro` 与
+`gpt-6.1-sol`）。也就是说**选了不会报错**；至于每个后端会不会因为换档而真的改变
+思考量，取决于那个后端自己——早期实测里 `minimal` / `low` 在不少模型上
+`reasoning_tokens` 为 0。
+
+> 档位名由 DSH 的 pi-ai 适配器按 id 自动生成（`Off` / `Minimal` / … / `Max`），
+> 插件无法改写成「Ultra」之类的自定义文案；最高档就是 `max`，显示为 `Max`。
 
 ### 推理明文不是每轮都有
 
@@ -194,7 +206,7 @@ dsh plugin --profile desktop add github:llersakuya/dsh-connect-qpcm-gateway
 | 目录报 `MISSING_CREDENTIAL` | 还没存 key |
 | 选择器里没有模型 | 「接入」开关没开，或者勾选清单是「全不选」 |
 | `provider.failed` 里提到 peer | 这台 Host 缺 `@earendil-works/pi-ai` 或 `@deepseek-ai/dsh-llm-pi-ai` |
-| 推理档位菜单里没有 `minimal`/`low` | 故意的，见上文「推理档位只声明 off / medium / high」 |
+| 选了某档但思考量没变 | 网关接受该档位，但那个后端可能本来就不分档；早期实测 `minimal`/`low` 在不少模型上 `reasoning_tokens` 为 0 |
 | 某轮没显示思考过程 | 网关只在流式且它愿意的时候发明文摘要；`reasoning_tokens` 仍计入 usage |
 
 面板里的每一次写操作都是同源请求；Host 侧对 `Host` / `Origin` 有围栏，跨站页面
