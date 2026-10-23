@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "QPCM 网关接入",
+    "title": "模型网关接入工具",
     "description": "把 https://ai.qpcmqam.cn/v1 接成 DSH 的 OpenAI 兼容模型来源：面板里填 Base URL 与 API Key、拉取模型目录、勾选要提供的模型，即可在模型选择器里直接使用。"
   }
 }
